@@ -60,4 +60,3 @@ Conecte no dispositivo Bluetooth chamado `E36-Dash` e envie strings de texto pla
 - `STATUS` -> Retorna um JSON com as leituras atuais dos sensores (útil para dashboards no próprio celular!)
 
 ---
-*Desenvolvido com ❤️ para a M3 E36*
