@@ -188,7 +188,7 @@ void drawScreen4_Pressoes() {
 void drawScreen5_Status() {
     u8g2.setFont(u8g2_font_6x10_tr);
     
-    // Debug de Velocidades
+    // Debug de Velocidades + Bateria
     u8g2.setCursor(0, 12);
     u8g2.print("0x605R:"); u8g2.print(carData.speed1, 1);
     
@@ -197,6 +197,9 @@ void drawScreen5_Status() {
 
     u8g2.setCursor(0, 28);
     u8g2.print("0x606D:"); u8g2.print(carData.speed3, 1);
+    
+    u8g2.setCursor(64, 28);
+    u8g2.print("BAT:"); u8g2.print(carData.battery, 1); u8g2.print("V");
 }
 
 // ============================================================
