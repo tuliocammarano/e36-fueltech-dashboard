@@ -148,8 +148,9 @@ void drawScreen3_Injecao() {
     u8g2.setCursor(0, 28);
     u8g2.print("Pnt:"); u8g2.print(carData.advance, 1);
     
-    // Calcula Litros/Hora: (3 * RPM * Inj_ms * 994cc) / 60000 * 0.06 -> RPM * Inj_ms * 0.002982
-    float lph = carData.rpm * carData.injTimeA * 0.002982f;
+    // Calcula Litros/Hora para Injeção Semi-Sequencial (2 injeções por ciclo de 720 graus)
+    // (6 cil * RPM * Inj_ms * 994cc) / 60000 * 0.06 -> RPM * Inj_ms * 0.005964
+    float lph = carData.rpm * carData.injTimeA * 0.005964f;
     
     u8g2.setCursor(64, 28);
     if (carData.speed > 3.0f) {
