@@ -32,7 +32,7 @@
     <!-- ID 103: Lambda(x100), InjA(x100), LambdaCorr(x100), FuelFlow(x10) -->
     <frame id="103">
       <value name="FT - Lambda Sonda" offset="0" length="2" signed="true" conversion="V/100" />
-      <value name="FT - Tempo Inj A (ms)" offset="2" length="2" signed="true" conversion="V/100" />
+      <value targetId="103" units="ms" offset="2" length="2" signed="true" conversion="V/100" /> <!-- Inj A Nativo -->
       <value name="FT - Correc. Sonda (%)" offset="4" length="2" signed="true" conversion="V/100" />
       <value name="FT - Fluxo Comb. (L/min)" offset="6" length="2" signed="true" conversion="V/10" />
     </frame>

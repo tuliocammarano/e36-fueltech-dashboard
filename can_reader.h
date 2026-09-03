@@ -150,6 +150,19 @@ static void decodeFT600(uint32_t canId, const uint8_t* d) {
             break;
         }
 
+        // 0x14080603 — Advance, Target RPM, Cam
+        case FTCAN_ID_0x603: {
+            carData.advance = decodeS16BE(d[0], d[1]) * 0.1f;          // graus
+            break;
+        }
+
+        // 0x14080606 — Speed (Driven/Non-driven)
+        case FTCAN_ID_0x606: {
+            // Speed (x10). Bytes 0-1 = Driven Wheel Speed
+            carData.speed = decodeU16BE(d[0], d[1]) * 0.1f;            // km/h
+            break;
+        }
+
         // 0x14080607 — Lambda Corr, Fuel Flow, Inj Time A, Inj Time B
         case FTCAN_ID_0x607: {
             carData.lambdaCorrection = decodeS16BE(d[0], d[1]) * 0.01f;   // fator
@@ -228,6 +241,8 @@ void readCAN() {
             case FTCAN_ID_0x600:
             case FTCAN_ID_0x601:
             case FTCAN_ID_0x602:
+            case FTCAN_ID_0x603:
+            case FTCAN_ID_0x606:
             case FTCAN_ID_0x607:
             case FTCAN_ID_0x608:
                 decodeFT600(id, d);

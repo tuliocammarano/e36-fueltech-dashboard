@@ -29,6 +29,9 @@ struct CarData {
     // ---- Simplified Packet 0x14080603 ----
     float advance;          // Avanço de Ignição (graus)
 
+    // ---- Simplified Packet 0x14080606 ----
+    float speed;            // Velocidade (km/h)
+
     // ---- Simplified Packet 0x14080604 ----
     // Novas métricas extraídas dos pacotes fragmentados (0x0FF, 0x1FF...)
     float dutyA;              // %

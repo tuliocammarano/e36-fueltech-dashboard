@@ -146,10 +146,22 @@ void drawScreen3_Injecao() {
     u8g2.print("LCor:"); u8g2.print(carData.lambdaCorrection, 2);
     
     u8g2.setCursor(0, 28);
-    u8g2.print("FLW:"); u8g2.print((int)carData.fuelFlowTotal);
+    u8g2.print("Pnt:"); u8g2.print(carData.advance, 1);
+    
+    // Calcula Litros/Hora: (3 * RPM * Inj_ms * 994cc) / 60000 * 0.06 -> RPM * Inj_ms * 0.002982
+    float lph = carData.rpm * carData.injTimeA * 0.002982f;
     
     u8g2.setCursor(64, 28);
-    u8g2.print("CNS:"); u8g2.print(carData.fuelConsumption, 1);
+    u8g2.print("kmL:");
+    if (carData.speed > 3.0f && lph > 0.5f) {
+        float kml = carData.speed / lph;
+        if (kml > 99.9f) kml = 99.9f;
+        u8g2.print(kml, 1);
+    } else if (carData.speed > 3.0f && lph <= 0.5f) {
+        u8g2.print("99.9"); // Cut-off
+    } else {
+        u8g2.print("--");
+    }
 }
 
 void drawScreen4_Pressoes() {
