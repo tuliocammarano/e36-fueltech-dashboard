@@ -89,17 +89,17 @@ void streamLogToBT() {
 
     // ID 107: DutyA(x10), DutyB(x10), Fan, WGPress(x1000)
     uint16_t dutyA = carData.dutyA * 10;
+    uint16_t dutyB = 0;
+    uint16_t fan = 0;
+    int16_t wgP = carData.wgPressure * 1000;
     payload[0] = dutyA & 0xFF; payload[1] = dutyA >> 8;
-    uint16_t dutyB = carData.dutyB * 10;
     payload[2] = dutyB & 0xFF; payload[3] = dutyB >> 8;
-    uint16_t fan = carData.fanState;
     payload[4] = fan & 0xFF; payload[5] = fan >> 8;
-    int16_t wg = carData.wgPressure * 1000;
-    payload[6] = wg & 0xFF; payload[7] = wg >> 8;
+    payload[6] = wgP & 0xFF; payload[7] = wgP >> 8;
     sendRDBinaryFrame(107, payload);
 
     // ID 108: DiffFuelPress(x1000)
-    int16_t diffF = carData.diffFuelPressure * 1000;
+    int16_t diffF = 0;
     payload[0] = diffF & 0xFF; payload[1] = diffF >> 8;
     payload[2] = 0; payload[3] = 0; payload[4] = 0; payload[5] = 0; payload[6] = 0; payload[7] = 0;
     sendRDBinaryFrame(108, payload);
@@ -139,15 +139,12 @@ void streamLogToBT() {
         payload[4] = 0; payload[5] = 0; payload[6] = 0; payload[7] = 0;
         sendRDBinaryFrame(106, payload);
 
-        // ID 109: 2-Step e Antilag
+        // ID 109: 2-Step(0/1), 3-Step(0/1)
         uint16_t twoStep = carData.twoStepState;
-        payload[0] = twoStep & 0xFF; payload[1] = twoStep >> 8;
-        
         // O sinal nativo de antilag da ECU não é claro, então usamos a memória do botão virtual!
         uint16_t threeStep = (carData.switchState & (1 << 2)) ? 1 : 0; 
+        payload[0] = twoStep & 0xFF; payload[1] = twoStep >> 8;
         payload[2] = threeStep & 0xFF; payload[3] = threeStep >> 8;
-        
-        payload[4] = 0; payload[5] = 0; payload[6] = 0; payload[7] = 0;
         sendRDBinaryFrame(109, payload);
     }
 }

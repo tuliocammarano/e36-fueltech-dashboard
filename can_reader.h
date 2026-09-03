@@ -50,40 +50,18 @@ void parseMeasures(const uint8_t* payload, uint16_t length) {
         else if (dataId == 0x0045) { // Duty Cycle Bank A (0.1)
             carData.dutyA = value * 0.1f;
         }
-        else if (dataId == 0x0046) { // Duty Cycle Bank B (0.1)
-            carData.dutyB = value * 0.1f;
-        }
-        else if (dataId == 0x004D) { // Eletro Fan State (1)
-            carData.fanState = value;
-        }
         else if (dataId == 0x0048) { // 2-Step Signal
             carData.twoStepState = value;
-        }
-        else if (dataId == 0x0049) { // 3-Step Signal (Antilag)
-            carData.threeStepState = value;
         }
         else if (dataId == 0x0183) { // Wastegate Pressure Input (assumindo 0.001)
             carData.wgPressure = value * 0.001f;
         }
         else if (dataId == 0x000F) { // Right rear wheel speed (0.1)
             if (value != 0x7FFF && value > 0) {
-                carData.speed1 = value * 0.1f;
-                // Usa como oficial temporariamente
-                carData.speed = carData.speed1;
+                carData.speed = value * 0.1f;
             } else if (value == 0) {
-                carData.speed1 = 0.0f;
                 carData.speed = 0.0f;
             }
-        }
-        else if (dataId == 0x000A) { // Traction speed (0.1)
-            if (value != 0x7FFF && value > 0) {
-                carData.speed3 = value * 0.1f;
-            } else if (value == 0) {
-                carData.speed3 = 0.0f;
-            }
-        }
-        else if (dataId == 0x0152) { // Generic Outputs State (Bitmask)
-            carData.genericOutputs = (uint16_t)value;
         }
     }
 }
@@ -164,49 +142,11 @@ static void decodeFT600(uint32_t canId, const uint8_t* d) {
             break;
         }
 
-        // 0x14080603 — Wheel Speeds (From FuelTech Table)
-        // Bytes 0-1: FR, Bytes 2-3: FL, Bytes 4-5: RR, Bytes 6-7: RL
-        case FTCAN_ID_0x603: {
-            uint16_t b01_FR = decodeU16BE(d[0], d[1]);
-            uint16_t b23_FL = decodeU16BE(d[2], d[3]);
-            uint16_t b45_RR = decodeU16BE(d[4], d[5]);
-            uint16_t b67_RL = decodeU16BE(d[6], d[7]);
+        // 0x14080603 — Removed (Wheel speeds are now parsed from Segmented Packets)
 
-            if (b01_FR != 0xFFFF && b01_FR != 0x7FFF) carData.speed1 = b01_FR * 0.1f;
-            if (b23_FL != 0xFFFF && b23_FL != 0x7FFF) carData.speed2 = b23_FL * 0.1f;
-            if (b67_RL != 0xFFFF && b67_RL != 0x7FFF) carData.speed3 = b67_RL * 0.1f;
-            
-            // Wheel Speed RR (Traseira Direita) está nos Bytes 4-5!
-            if (b45_RR != 0xFFFF && b45_RR != 0x7FFF && b45_RR > 0) {
-                carData.speed = b45_RR * 0.1f;
-            } else if (b45_RR == 0) {
-                carData.speed = 0.0f;
-            }
-            break;
-        }
+        // 0x14080605 — Removed (Wheel speeds are now parsed from Segmented Packets)
 
-        // 0x14080605 — Speed (Right/Left)
-        case FTCAN_ID_0x605: {
-            uint16_t rSpeed = decodeU16BE(d[0], d[1]);
-            uint16_t lSpeed = decodeU16BE(d[2], d[3]);
-            if (rSpeed != 0xFFFF && rSpeed != 0x7FFF) carData.speed1 = rSpeed * 0.1f;
-            if (lSpeed != 0xFFFF && lSpeed != 0x7FFF) carData.speed2 = lSpeed * 0.1f;
-            
-            // Provisório: Tenta usar a Roda Traseira Direita
-            if (rSpeed != 0xFFFF && rSpeed != 0x7FFF && rSpeed > 0) {
-                carData.speed = rSpeed * 0.1f;
-            } else if (rSpeed == 0) {
-                carData.speed = 0.0f;
-            }
-            break;
-        }
-
-        // 0x14080606 — Speed (Driven/Non-driven)
-        case FTCAN_ID_0x606: {
-            uint16_t dSpeed = decodeU16BE(d[0], d[1]);
-            if (dSpeed != 0xFFFF && dSpeed != 0x7FFF) carData.speed3 = dSpeed * 0.1f;
-            break;
-        }
+        // 0x14080606 — Removed
 
         // 0x14080607 — Lambda Corr, Fuel Flow, Inj Time A, Inj Time B
         case FTCAN_ID_0x607: {
@@ -286,9 +226,6 @@ void readCAN() {
             case FTCAN_ID_0x600:
             case FTCAN_ID_0x601:
             case FTCAN_ID_0x602:
-            case FTCAN_ID_0x603:
-            case FTCAN_ID_0x605:
-            case FTCAN_ID_0x606:
             case FTCAN_ID_0x607:
             case FTCAN_ID_0x608:
                 decodeFT600(id, d);
