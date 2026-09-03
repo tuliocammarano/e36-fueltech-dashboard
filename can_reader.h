@@ -156,10 +156,19 @@ static void decodeFT600(uint32_t canId, const uint8_t* d) {
             break;
         }
 
+        // 0x14080605 — Speed (Right/Left)
+        case FTCAN_ID_0x605: {
+            // Roda Traseira Direita (Bytes 0-1)
+            float rightWheelSpeed = decodeU16BE(d[0], d[1]) * 0.1f;
+            if (rightWheelSpeed > 0) carData.speed = rightWheelSpeed;
+            break;
+        }
+
         // 0x14080606 — Speed (Driven/Non-driven)
         case FTCAN_ID_0x606: {
-            // Speed (x10). Bytes 0-1 = Driven Wheel Speed
-            carData.speed = decodeU16BE(d[0], d[1]) * 0.1f;            // km/h
+            // Driven Wheel Speed (Bytes 0-1)
+            float drivenSpeed = decodeU16BE(d[0], d[1]) * 0.1f;
+            if (drivenSpeed > 0) carData.speed = drivenSpeed;
             break;
         }
 
@@ -242,6 +251,7 @@ void readCAN() {
             case FTCAN_ID_0x601:
             case FTCAN_ID_0x602:
             case FTCAN_ID_0x603:
+            case FTCAN_ID_0x605:
             case FTCAN_ID_0x606:
             case FTCAN_ID_0x607:
             case FTCAN_ID_0x608:
