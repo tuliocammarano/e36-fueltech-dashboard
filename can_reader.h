@@ -24,6 +24,98 @@ void initCAN() {
 }
 
 // ============================================================
+// FTCAN 2.0 Segmented Payload Parser
+// ============================================================
+uint8_t ftPayload[2048];
+uint16_t ftPayloadLength = 0;
+uint16_t ftPayloadExpected = 0;
+uint8_t ftNextSegment = 0;
+
+void parseMeasures(const uint8_t* payload, uint16_t length) {
+    for (uint16_t i = 0; i + 3 < length; i += 4) {
+        uint16_t measureId = (payload[i] << 8) | payload[i+1];
+        int16_t value = (payload[i+2] << 8) | payload[i+3];
+        
+        uint16_t dataId = measureId >> 1;
+        uint8_t isStatus = measureId & 0x01;
+        
+        if (isStatus) continue;
+        
+        if (dataId == 0x0009) { // Battery Voltage (0.01)
+            carData.battery = value * 0.01f;
+        }
+        else if (dataId == 0x0047) { // Ignition Advance (0.1)
+            carData.advance = value * 0.1f;
+        }
+        else if (dataId == 0x0045) { // Duty Cycle Bank A (0.1)
+            carData.dutyA = value * 0.1f;
+        }
+        else if (dataId == 0x0046) { // Duty Cycle Bank B (0.1)
+            carData.dutyB = value * 0.1f;
+        }
+        else if (dataId == 0x004D) { // Eletro Fan State (1)
+            carData.fanState = value;
+        }
+        else if (dataId == 0x0048) { // 2-Step Signal
+            carData.twoStepState = value;
+        }
+        else if (dataId == 0x0049) { // 3-Step Signal (Antilag)
+            carData.threeStepState = value;
+        }
+        else if (dataId == 0x0183) { // Wastegate Pressure Input (assumindo 0.001)
+            carData.wgPressure = value * 0.001f;
+        }
+        else if (dataId == 0x0266) { // Differential Fuel Pressure (0.001)
+            carData.diffFuelPressure = value * 0.001f;
+        }
+        else if (dataId == 0x0152) { // Generic Outputs State (Bitmask)
+            carData.genericOutputs = (uint16_t)value;
+        }
+    }
+}
+
+void processFTCAN20(const uint8_t* d, uint8_t len) {
+    if (len == 0) return;
+    uint8_t segment = d[0];
+    
+    if (segment == 0xFF) {
+        // Single packet
+        parseMeasures(&d[1], len - 1);
+    } 
+    else if (segment == 0x00) {
+        // First segment
+        if (len < 3) return;
+        ftPayloadExpected = ((d[1] & 0x07) << 8) | d[2];
+        if (ftPayloadExpected > 2048) ftPayloadExpected = 2048;
+        ftPayloadLength = 0;
+        
+        for (uint8_t i = 3; i < len; i++) {
+            ftPayload[ftPayloadLength++] = d[i];
+        }
+        ftNextSegment = 1;
+    }
+    else if (segment == ftNextSegment) {
+        // Subsequent segments
+        for (uint8_t i = 1; i < len; i++) {
+            if (ftPayloadLength < 2048) {
+                ftPayload[ftPayloadLength++] = d[i];
+            }
+        }
+        ftNextSegment++;
+        
+        // Check if finished
+        if (ftPayloadLength >= ftPayloadExpected) {
+            parseMeasures(ftPayload, ftPayloadExpected);
+            ftPayloadLength = 0; // Reset for next
+        }
+    } else {
+        // Out of order, abort
+        ftPayloadLength = 0;
+        ftNextSegment = 0;
+    }
+}
+
+// ============================================================
 // decodeFT600() — Decodifica pacotes Simplified do FT600
 // ============================================================
 static void decodeFT600(uint32_t canId, const uint8_t* d) {
@@ -32,8 +124,8 @@ static void decodeFT600(uint32_t canId, const uint8_t* d) {
         // 0x14080600 — TPS, MAP, Air Temp, Engine Temp
         case FTCAN_ID_0x600: {
             carData.tps        = decodeS16BE(d[0], d[1]) * 0.1f;       // %
-            // MAP vem em bar×1000; converte para kPa (×100)
-            carData.map        = decodeS16BE(d[2], d[3]) * 0.001f * 100.0f;  // kPa
+            // MAP vem em bar*1000; mantemos em Bar para mostrar vácuo negativo
+            carData.map        = decodeS16BE(d[2], d[3]) * 0.001f;     // Bar
             carData.airTemp    = decodeS16BE(d[4], d[5]) * 0.1f;       // °C
             carData.engineTemp = decodeS16BE(d[6], d[7]) * 0.1f;       // °C
             break;
@@ -131,7 +223,7 @@ void readCAN() {
         uint32_t id = message.can_id & 0x1FFFFFFF;
         const uint8_t* d = message.data;
 
-        // Tenta decodificar como pacote FT600
+        // Verifica se é um pacote simplificado
         switch (id) {
             case FTCAN_ID_0x600:
             case FTCAN_ID_0x601:
@@ -141,21 +233,53 @@ void readCAN() {
                 decodeFT600(id, d);
                 break;
 
-            // Pacotes EGT-4
             case EGT4_MODEL_A:
             case EGT4_MODEL_B:
                 decodeEGT(id, d);
                 break;
 
             default:
-                // Mensagem CAN não mapeada — ignora
-                continue;
+                // Verifica se é um FTCAN 2.0 Segmentado (DataFieldID = 0x02)
+                // Bits 13-11 = 0x02 -> 0x1000
+                // Message IDs de Broadcast em Tempo Real: 0x0FF, 0x1FF, 0x2FF, 0x3FF
+                uint16_t dataFieldAndMsg = id & 0x3FFF;
+                if (dataFieldAndMsg == 0x10FF || dataFieldAndMsg == 0x11FF || 
+                    dataFieldAndMsg == 0x12FF || dataFieldAndMsg == 0x13FF) {
+                    processFTCAN20(d, message.can_dlc);
+                }
+                break;
         }
 
         // Atualiza timestamp e flag de atividade
         carData.lastCanUpdateMs = millis();
         carData.canActive = true;
     }
+}
+
+// ============================================================
+// sendVirtualButtons() — Transmite o estado do painel do RealDash
+//                        para a FuelTech continuamente (20Hz)
+// ============================================================
+void sendVirtualButtons() {
+    struct can_frame frame;
+    frame.can_dlc = 8;
+    
+    // Switchpad-8 (ID Secreto descoberto via Sniffer: 0x12200320)
+    frame.can_id = 0x12200320 | CAN_EFF_FLAG;
+    
+    // MISTÉRIO RESOLVIDO: O Botão 1 acende quando o Byte 2 é alterado!
+    // A FuelTech usa o Byte 2 do CAN frame como o Bitmask dos 8 botões.
+    // Sendo assim, podemos mapear todos os 8 botões diretamente no Byte 2.
+    frame.data[0] = 0x00;
+    frame.data[1] = 0x00;
+    frame.data[2] = carData.switchState; // O Bitmask do celular vai direto pro Byte 2!
+    frame.data[3] = 0x00;
+    frame.data[4] = 0x00;
+    frame.data[5] = 0x00;
+    frame.data[6] = 0x00;
+    frame.data[7] = 0x00;
+
+    mcp2515.sendMessage(&frame);
 }
 
 #endif // CAN_READER_H

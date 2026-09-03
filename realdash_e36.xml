@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 
+  RealDash CAN XML para o Painel da BMW E36 c/ FuelTech
+  Protocolo: RealDash CAN (Binário Nativo) a 10Hz
+-->
+<RealDashCAN version="2">
+  <frames>
+    <!-- ID 100: RPM, MAP(kPa), TPS(x10), Gear -->
+    <frame id="100">
+      <value name="FT - RPM" offset="0" length="2" />
+      <value name="FT - MAP (Bar)" offset="2" length="2" signed="true" conversion="V/1000" />
+      <value name="FT - TPS (%)" offset="4" length="2" signed="true" conversion="V/10" />
+      <value name="FT - Marcha (Gear)" offset="6" length="2" signed="true" />
+    </frame>
+
+    <!-- ID 101: EngTemp, AirTemp, OilTemp, TransTemp -->
+    <frame id="101">
+      <value name="FT - Temp Motor (C)" offset="0" length="2" signed="true" conversion="V/10" />
+      <value name="FT - Temp Ar (C)" offset="2" length="2" signed="true" conversion="V/10" />
+      <value name="FT - Temp Oleo (C)" offset="4" length="2" signed="true" conversion="V/10" />
+      <value name="FT - Temp Cambio (C)" offset="6" length="2" signed="true" conversion="V/10" />
+    </frame>
+
+    <!-- ID 102: OilPress, FuelPress, WaterPress, BrakePress (all x1000 for 3 decimals) -->
+    <frame id="102">
+      <value name="FT - Pressao Oleo (Bar)" offset="0" length="2" signed="true" conversion="V/1000" />
+      <value name="FT - Pressao Comb. (Bar)" offset="2" length="2" signed="true" conversion="V/1000" />
+      <value name="FT - Pressao Agua (Bar)" offset="4" length="2" signed="true" conversion="V/1000" /> 
+      <value name="FT - Pressao Freio (Bar)" offset="6" length="2" signed="true" conversion="V/1000" />
+    </frame>
+
+    <!-- ID 103: Lambda(x100), InjA(x100), LambdaCorr(x100), FuelFlow(x10) -->
+    <frame id="103">
+      <value name="FT - Lambda Sonda" offset="0" length="2" signed="true" conversion="V/100" />
+      <value name="FT - Tempo Inj A (ms)" offset="2" length="2" signed="true" conversion="V/100" />
+      <value name="FT - Correc. Sonda (%)" offset="4" length="2" signed="true" conversion="V/100" />
+      <value name="FT - Fluxo Comb. (L/min)" offset="6" length="2" signed="true" conversion="V/10" />
+    </frame>
+
+    <!-- ID 104: EGT 1-4 -->
+    <frame id="104">
+      <value name="FT - EGT 1 (C)" offset="0" length="2" signed="true" />
+      <value name="FT - EGT 2 (C)" offset="2" length="2" signed="true" />
+      <value name="FT - EGT 3 (C)" offset="4" length="2" signed="true" />
+      <value name="FT - EGT 4 (C)" offset="6" length="2" signed="true" />
+    </frame>
+
+    <!-- ID 105: EGT 5-8 -->
+    <frame id="105">
+      <value name="FT - EGT 5 (C)" offset="0" length="2" signed="true" />
+      <value name="FT - EGT 6 (C)" offset="2" length="2" signed="true" />
+      <value name="FT - EGT 7 (C)" offset="4" length="2" signed="true" />
+      <value name="FT - EGT 8 (C)" offset="6" length="2" signed="true" />
+    </frame>
+
+    <!-- ID 106: Advance, Battery Voltage -->
+    <frame id="106">
+      <value name="FT - Avanco Ignicao (deg)" offset="0" length="2" signed="true" conversion="V/10" />
+      <value name="FT - Bateria (V)" offset="2" length="2" signed="false" conversion="V/100" />
+    </frame>
+
+    <!-- ID 107: Duty Cycle, Fan, WG Press, Diff Fuel Press -->
+    <frame id="107">
+      <value name="FT - Duty Cycle Banca A (%)" offset="0" length="2" signed="false" conversion="V/10" />
+      <value name="FT - Duty Cycle Banca B (%)" offset="2" length="2" signed="false" conversion="V/10" />
+      <value name="FT - Eletroventilador (0=Off,1=On)" offset="4" length="2" signed="false" />
+      <value name="FT - Pressao Wastegate (Bar)" offset="6" length="2" signed="true" conversion="V/1000" />
+    </frame>
+
+    <!-- ID 108: Diff Fuel Press -->
+    <frame id="108">
+      <value name="FT - Pressao Comb. Diferencial (Bar)" offset="0" length="2" signed="true" conversion="V/1000" />
+    </frame>
+
+    <!-- ID 109: 2-Step e 3-Step (Antilag) -->
+    <frame id="109">
+      <value name="FT - 2-Step Ativo (0=Off, 1=On)" offset="0" length="2" signed="false" />
+      <value name="FT - Antilag/3-Step (0=Off, 1=On)" offset="2" length="2" signed="false" />
+    </frame>
+  </frames>
+</RealDashCAN>

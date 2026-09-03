@@ -26,6 +26,21 @@ struct CarData {
     uint16_t rpm;           // Rotação do motor
     float oilTemp;          // Temperatura do óleo (°C) — vem no 0x602
 
+    // ---- Simplified Packet 0x14080603 ----
+    float advance;          // Avanço de Ignição (graus)
+
+    // ---- Simplified Packet 0x14080604 ----
+    // Novas métricas extraídas dos pacotes fragmentados (0x0FF, 0x1FF...)
+    float dutyA;              // %
+    float dutyB;              // %
+    uint8_t fanState;         // 0 = Off, 1 = On
+    float wgPressure;         // Bar
+    float diffFuelPressure;   // Bar
+    uint16_t genericOutputs;  // Bitmask de saídas genéricas (Para o VANOS)
+    float battery;          // Tensão da Bateria (V)
+    uint8_t twoStepState;     // 0 = Off, 1 = On
+    uint8_t threeStepState;   // 0 = Off, 1 = On
+
     // ---- Simplified Packet 0x14080607 ----
     float lambdaCorrection; // Correção de lambda
     float fuelFlowTotal;    // Fluxo total de combustível (L/min)
@@ -41,9 +56,10 @@ struct CarData {
     float egt[8];           // Temperatura EGT canais 1-8 (°C)
     bool  egtError[8];      // true = termopar desconectado (leitura 1050°C)
 
-    // ---- Metadata ----
+    // ---- Metadata e Controles Externos ----
     unsigned long lastCanUpdateMs;  // Último timestamp de mensagem CAN
     bool canActive;                 // CAN bus respondendo?
+    uint8_t switchState;            // Estado dos botões virtuais (Bitmask)
 
     // ---- Estado do sistema ----
     uint8_t currentScreen;          // Tela atual do display (0 a NUM_SCREENS-1)

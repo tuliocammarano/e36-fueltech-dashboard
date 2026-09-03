@@ -25,14 +25,37 @@ void drawStatusBar() {
     }
 
     u8g2.setFont(u8g2_font_5x7_tr);
+    // Ícone do Bluetooth (Posição 1)
     if (carData.bleConnected) {
         u8g2.setCursor(118, 7);
         u8g2.print("B");
     }
-    if (carData.loggingActive && ((millis() / 500) % 2 == 0)) {
-        u8g2.setCursor(118, 17);
-        u8g2.print("R");
+    
+    // Ícone 2-Step (Posição 2) - Lida pela ECU
+    if (carData.twoStepState) {
+        u8g2.setCursor(114, 15);
+        u8g2.print("2S");
+    } 
+    
+    // Ícone Anti-Lag (Posição 3) - Lido pelo estado do botão virtual (Bit 2)
+    if (carData.switchState & (1 << 2)) {
+        u8g2.setCursor(114, 23);
+        u8g2.print("AL");
     }
+
+    // Ícone EGT HOT (Posição 4)
+    // Reduzido para 550°C para compensar o atraso de ~3 segundos do módulo EGT
+    bool egtHot = false;
+    for(int i=0; i<6; i++) {
+        if (!carData.egtError[i] && carData.egt[i] >= 550.0f) {
+            egtHot = true; break;
+        }
+    }
+    
+    if (egtHot) {
+        u8g2.setCursor(114, 31);
+        if ((millis() / 100) % 2 == 0) u8g2.print("!!!"); // Pisca rápido!
+    } 
 }
 
 // ============================================================
@@ -40,22 +63,36 @@ void drawStatusBar() {
 // ============================================================
 
 void drawScreen0_Principal() {
-    u8g2.setFont(u8g2_font_helvB12_tr); 
+    // --- LINHA SUPERIOR ---
+    // RPM Bem grande
+    u8g2.setFont(u8g2_font_helvB14_tr); 
     u8g2.setCursor(0, 14);
     u8g2.print(carData.rpm);
+    // Legenda "rpm" pequena no pezinho
     u8g2.setFont(u8g2_font_5x7_tr);
-    u8g2.print(" rpm");
+    u8g2.print("rpm");
 
+    // Marcha gigante no canto superior direito
     u8g2.setFont(u8g2_font_helvB14_tr);
-    u8g2.setCursor(85, 14);
+    u8g2.setCursor(95, 14);
     u8g2.print(gearName(carData.gear));
 
-    u8g2.setFont(u8g2_font_helvB08_tr); // Fonte um pouco mais gordinha e forte
-    u8g2.setCursor(0, 31);
-    u8g2.print("MAP:"); u8g2.print((int)carData.map);
+    // --- LINHA INFERIOR ---
+    // MAP Grande
+    u8g2.setFont(u8g2_font_helvB12_tr); 
+    u8g2.setCursor(0, 32);
+    u8g2.print(carData.map, 2); // Ex: -0.60
+    // Legenda "bar" pequena
+    u8g2.setFont(u8g2_font_5x7_tr);
+    u8g2.print("bar");
     
-    u8g2.setCursor(65, 31);
-    u8g2.print("O2:"); u8g2.print(carData.exhaustO2, 2);
+    // Lambda Grande
+    u8g2.setFont(u8g2_font_helvB12_tr);
+    u8g2.setCursor(50, 32);
+    u8g2.print(carData.exhaustO2, 2);
+    // Legenda "O2" pequena
+    u8g2.setFont(u8g2_font_5x7_tr);
+    u8g2.print("o2");
 }
 
 void drawScreen1_Temperaturas() {
@@ -135,7 +172,7 @@ void drawScreen5_Status() {
     u8g2.print("BT:"); u8g2.print(carData.bleConnected ? "ON" : "OFF");
     
     u8g2.setCursor(60, 12);
-    u8g2.print("WIFI:"); u8g2.print(carData.wifiConnected ? "ON" : "OFF");
+    u8g2.print("BAT:"); u8g2.print(carData.battery, 1); u8g2.print("V");
 
     u8g2.setCursor(0, 28);
     u8g2.print("LOG:"); u8g2.print(carData.loggingActive ? "ON" : "OFF");
@@ -160,6 +197,25 @@ void prevScreen() {
     }
 }
 
+static const unsigned char bmw_logo_bits[] U8X8_PROGMEM = {
+  0x00, 0x00, 0x00, 0x00, 0x00, 0xf0, 0x0f, 0x00,
+  0x00, 0xfe, 0x7f, 0x00, 0x00, 0x4f, 0xf2, 0x00,
+  0xc0, 0xc3, 0xe3, 0x03, 0xe0, 0x45, 0xa2, 0x07,
+  0x70, 0x43, 0xe2, 0x0e, 0x30, 0xe5, 0xa0, 0x0c,
+  0x18, 0xfb, 0x40, 0x18, 0x1c, 0xfc, 0x00, 0x38,
+  0x0c, 0xfe, 0x00, 0x30, 0x0c, 0xff, 0x00, 0x30,
+  0x06, 0xff, 0x00, 0x60, 0x86, 0xff, 0x00, 0x60,
+  0x86, 0xff, 0x00, 0x60, 0x86, 0xff, 0x00, 0x60,
+  0x06, 0x00, 0xff, 0x61, 0x06, 0x00, 0xff, 0x61,
+  0x06, 0x00, 0xff, 0x61, 0x06, 0x00, 0xff, 0x60,
+  0x0c, 0x00, 0xff, 0x30, 0x0c, 0x00, 0x7f, 0x30,
+  0x1c, 0x00, 0x3f, 0x38, 0x18, 0x00, 0x1f, 0x18,
+  0x30, 0x00, 0x07, 0x0c, 0x70, 0x00, 0x00, 0x0e,
+  0xe0, 0x00, 0x00, 0x07, 0xc0, 0x03, 0xc0, 0x03,
+  0x00, 0x0f, 0xf0, 0x00, 0x00, 0xfe, 0x7f, 0x00,
+  0x00, 0xf0, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00,
+};
+
 void initDisplay() {
     pinMode(MCP2515_CS_PIN, OUTPUT);
     digitalWrite(MCP2515_CS_PIN, HIGH);
@@ -167,18 +223,18 @@ void initDisplay() {
     u8g2.begin();
 
     u8g2.clearBuffer();
-    u8g2.setFont(u8g2_font_helvB10_tr);
-    u8g2.setCursor(0, 12);
-    u8g2.print("E36 Dash");
-    u8g2.setFont(u8g2_font_6x10_tr);
-    u8g2.setCursor(0, 28);
-    u8g2.print("Booting...");
+    
+    // Desenha a logo da BMW centralizada na tela
+    // A tela tem 128px. A logo tem 32px. (128 - 32) / 2 = 48
+    u8g2.drawXBMP(48, 0, 32, 32, bmw_logo_bits);
+    
     u8g2.sendBuffer();
-    delay(1500);
+    delay(2000);
 }
 
 void updateDisplay() {
-    if (millis() - carData.lastCanUpdateMs > CAN_TIMEOUT_MS) {
+    // Aumentei o timeout para 3 segundos para evitar falsos positivos
+    if (millis() - carData.lastCanUpdateMs > 3000) {
         carData.canActive = false;
     }
 
@@ -186,10 +242,18 @@ void updateDisplay() {
     u8g2.clearBuffer();
 
     if (!carData.canActive) {
-        u8g2.setFont(u8g2_font_helvB12_tr);
-        u8g2.setCursor(10, 20);
-        u8g2.print("SEM SINAL CAN");
+        // Quando entra no modo Diagnóstico no FTManager, a FuelTech para de transmitir!
+        // Em vez de apagar a tela (o que te fez achar que ele travou), 
+        // agora ele mostra que a injeção está pausada/desligada.
+        u8g2.setPowerSave(0);
+        u8g2.setFont(u8g2_font_helvB10_tr);
+        u8g2.setCursor(15, 20);
+        u8g2.print("ECU OFFLINE");
     } else {
+        // Com CAN (Carro Ligado) -> Liga a tela e renderiza
+        u8g2.setPowerSave(0);
+        u8g2.setFont(u8g2_font_helvB12_tr);
+        
         switch (carData.currentScreen) {
             case 0: drawScreen0_Principal(); break;
             case 1: drawScreen1_Temperaturas(); break;
@@ -199,9 +263,10 @@ void updateDisplay() {
             case 5: drawScreen5_Status(); break;
             default: carData.currentScreen = 0; break;
         }
+        
+        drawStatusBar();
     }
 
-    drawStatusBar();
     u8g2.sendBuffer();
 }
 
