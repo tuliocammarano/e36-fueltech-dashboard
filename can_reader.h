@@ -65,8 +65,22 @@ void parseMeasures(const uint8_t* payload, uint16_t length) {
         else if (dataId == 0x0183) { // Wastegate Pressure Input (assumindo 0.001)
             carData.wgPressure = value * 0.001f;
         }
-        else if (dataId == 0x0266) { // Differential Fuel Pressure (0.001)
-            carData.diffFuelPressure = value * 0.001f;
+        else if (dataId == 0x000F) { // Right rear wheel speed (0.1)
+            if (value != 0x7FFF && value > 0) {
+                carData.speed1 = value * 0.1f;
+                // Usa como oficial temporariamente
+                carData.speed = carData.speed1;
+            } else if (value == 0) {
+                carData.speed1 = 0.0f;
+                carData.speed = 0.0f;
+            }
+        }
+        else if (dataId == 0x000A) { // Traction speed (0.1)
+            if (value != 0x7FFF && value > 0) {
+                carData.speed3 = value * 0.1f;
+            } else if (value == 0) {
+                carData.speed3 = 0.0f;
+            }
         }
         else if (dataId == 0x0152) { // Generic Outputs State (Bitmask)
             carData.genericOutputs = (uint16_t)value;
