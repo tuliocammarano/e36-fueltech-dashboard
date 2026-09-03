@@ -31,6 +31,9 @@ struct CarData {
 
     // ---- Simplified Packet 0x14080606 ----
     float speed;            // Velocidade (km/h)
+    float speed1;           // Debug: 0x605 Right
+    float speed2;           // Debug: 0x605 Left
+    float speed3;           // Debug: 0x606 Driven
 
     // ---- Simplified Packet 0x14080604 ----
     // Novas métricas extraídas dos pacotes fragmentados (0x0FF, 0x1FF...)

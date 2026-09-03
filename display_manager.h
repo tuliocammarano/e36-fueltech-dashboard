@@ -188,17 +188,15 @@ void drawScreen4_Pressoes() {
 void drawScreen5_Status() {
     u8g2.setFont(u8g2_font_6x10_tr);
     
+    // Debug de Velocidades
     u8g2.setCursor(0, 12);
-    u8g2.print("BT:"); u8g2.print(carData.bleConnected ? "ON" : "OFF");
+    u8g2.print("0x605R:"); u8g2.print(carData.speed1, 1);
     
-    u8g2.setCursor(60, 12);
-    u8g2.print("BAT:"); u8g2.print(carData.battery, 1); u8g2.print("V");
+    u8g2.setCursor(64, 12);
+    u8g2.print("0x605L:"); u8g2.print(carData.speed2, 1);
 
     u8g2.setCursor(0, 28);
-    u8g2.print("LOG:"); u8g2.print(carData.loggingActive ? "ON" : "OFF");
-    
-    u8g2.setCursor(60, 28);
-    u8g2.print("CAN:"); u8g2.print(carData.canActive ? "OK" : "OFF");
+    u8g2.print("0x606D:"); u8g2.print(carData.speed3, 1);
 }
 
 // ============================================================
