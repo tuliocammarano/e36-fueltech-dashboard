@@ -152,15 +152,23 @@ void drawScreen3_Injecao() {
     float lph = carData.rpm * carData.injTimeA * 0.002982f;
     
     u8g2.setCursor(64, 28);
-    u8g2.print("kmL:");
-    if (carData.speed > 3.0f && lph > 0.5f) {
-        float kml = carData.speed / lph;
-        if (kml > 99.9f) kml = 99.9f;
-        u8g2.print(kml, 1);
-    } else if (carData.speed > 3.0f && lph <= 0.5f) {
-        u8g2.print("99.9"); // Cut-off
+    if (carData.speed > 3.0f) {
+        u8g2.print("kmL:");
+        if (lph > 0.5f) {
+            float kml = carData.speed / lph;
+            if (kml > 99.9f) kml = 99.9f;
+            u8g2.print(kml, 1);
+        } else {
+            u8g2.print("99.9"); // Cut-off
+        }
     } else {
-        u8g2.print("--");
+        // Carro parado: Mostra L/h
+        u8g2.print("L/h:");
+        if (carData.rpm > 0) {
+            u8g2.print(lph, 1);
+        } else {
+            u8g2.print("--");
+        }
     }
 }
 
