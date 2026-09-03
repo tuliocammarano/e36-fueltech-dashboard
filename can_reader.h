@@ -150,21 +150,22 @@ static void decodeFT600(uint32_t canId, const uint8_t* d) {
             break;
         }
 
-        // 0x14080603 — Wheel Speeds (According to user screenshot)
+        // 0x14080603 — Wheel Speeds (From FuelTech Table)
+        // Bytes 0-1: FR, Bytes 2-3: FL, Bytes 4-5: RR, Bytes 6-7: RL
         case FTCAN_ID_0x603: {
-            uint16_t b01 = decodeU16BE(d[0], d[1]);
-            uint16_t b23 = decodeU16BE(d[2], d[3]);
-            uint16_t b45 = decodeU16BE(d[4], d[5]);
-            uint16_t b67 = decodeU16BE(d[6], d[7]);
+            uint16_t b01_FR = decodeU16BE(d[0], d[1]);
+            uint16_t b23_FL = decodeU16BE(d[2], d[3]);
+            uint16_t b45_RR = decodeU16BE(d[4], d[5]);
+            uint16_t b67_RL = decodeU16BE(d[6], d[7]);
 
-            if (b01 != 0xFFFF && b01 != 0x7FFF) carData.speed1 = b01 * 0.1f;
-            if (b23 != 0xFFFF && b23 != 0x7FFF) carData.speed2 = b23 * 0.1f;
-            if (b45 != 0xFFFF && b45 != 0x7FFF) carData.speed3 = b45 * 0.1f;
+            if (b01_FR != 0xFFFF && b01_FR != 0x7FFF) carData.speed1 = b01_FR * 0.1f;
+            if (b23_FL != 0xFFFF && b23_FL != 0x7FFF) carData.speed2 = b23_FL * 0.1f;
+            if (b67_RL != 0xFFFF && b67_RL != 0x7FFF) carData.speed3 = b67_RL * 0.1f;
             
-            // Assume que Wheel Speed RR (Traseira Direita) é o último (Bytes 6-7) baseado no print
-            if (b67 != 0xFFFF && b67 != 0x7FFF && b67 > 0) {
-                carData.speed = b67 * 0.1f;
-            } else if (b67 == 0) {
+            // Wheel Speed RR (Traseira Direita) está nos Bytes 4-5!
+            if (b45_RR != 0xFFFF && b45_RR != 0x7FFF && b45_RR > 0) {
+                carData.speed = b45_RR * 0.1f;
+            } else if (b45_RR == 0) {
                 carData.speed = 0.0f;
             }
             break;
