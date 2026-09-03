@@ -160,17 +160,8 @@ static void decodeFT600(uint32_t canId, const uint8_t* d) {
         case FTCAN_ID_0x605: {
             // Roda Traseira Direita (Bytes 0-1)
             uint16_t rawSpeed = decodeU16BE(d[0], d[1]);
-            if (rawSpeed != 0xFFFF && rawSpeed > 0) {
-                carData.speed = rawSpeed * 0.1f;
-            }
-            break;
-        }
-
-        // 0x14080606 — Speed (Driven/Non-driven)
-        case FTCAN_ID_0x606: {
-            // Driven Wheel Speed (Bytes 0-1)
-            uint16_t rawSpeed = decodeU16BE(d[0], d[1]);
-            if (rawSpeed != 0xFFFF && rawSpeed > 0) {
+            // Ignora 0xFFFF e 0x7FFF (FuelTech usa ambos para sensores desativados)
+            if (rawSpeed != 0xFFFF && rawSpeed != 0x7FFF && rawSpeed > 0) {
                 carData.speed = rawSpeed * 0.1f;
             } else if (rawSpeed == 0) {
                 carData.speed = 0.0f;
@@ -258,7 +249,6 @@ void readCAN() {
             case FTCAN_ID_0x602:
             case FTCAN_ID_0x603:
             case FTCAN_ID_0x605:
-            case FTCAN_ID_0x606:
             case FTCAN_ID_0x607:
             case FTCAN_ID_0x608:
                 decodeFT600(id, d);
