@@ -70,9 +70,9 @@ void loop() {
         checkBLE();
     }
 
-    // Transmite o estado do painel virtual para a FuelTech (100Hz = 10ms)
-    // O amigo usou 10ms no EGT, então vamos igualar a frequência!
-    if (currentMs - lastCanSendMs >= 10) { 
+    // Transmite o estado do painel virtual para a FuelTech (10Hz = 100ms)
+    // Reduzido para evitar flood na rede CAN e permitir que o FTManager também mande comandos
+    if (currentMs - lastCanSendMs >= 100) { 
         lastCanSendMs = currentMs;
         sendVirtualButtons();
     }
@@ -82,10 +82,13 @@ void loop() {
         lastBtnNextMs = currentMs;
         nextScreen();
     }
+    // Desativado a pedido do usuário para evitar ghost presses (pino flutuando)
+    /*
     if (digitalRead(BTN_PREV_PIN) == LOW && currentMs - lastBtnPrevMs > 300) {
         lastBtnPrevMs = currentMs;
         prevScreen();
     }
+    */
 
     // 3. Display Update - 20 FPS (50ms)
     if (currentMs - lastDisplayMs >= DISPLAY_UPDATE_MS) {
