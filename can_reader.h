@@ -136,14 +136,11 @@ static void decodeFT600(uint32_t canId, const uint8_t* d) {
         }
 
         // 0x14080603 — Wheel Speeds (From FuelTech Table)
-        // O Fator de escala da FuelTech para velocidade mudou em firmwares recentes.
-        // Pelo relato de 0.6 km/L a 40km/h, a FT está mandando o valor direto em km/h (multiplicador 1)
-        // em vez de 0.1!
         case FTCAN_ID_0x603: {
             uint16_t b45_RR = decodeU16BE(d[4], d[5]); // Wheel Speed RR está nos Bytes 4-5
             
             if (b45_RR != 0xFFFF && b45_RR != 0x7FFF && b45_RR > 0) {
-                carData.speed = (float)b45_RR; // Multiplicador 1! (Se fosse 400 seria 40.0, mas o user viu 4 virar 0.4)
+                carData.speed = b45_RR * 0.1f; // Volta o multiplicador oficial da FuelTech (0.1)
             } else if (b45_RR == 0) {
                 carData.speed = 0.0f;
             }

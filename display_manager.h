@@ -148,40 +148,41 @@ void drawScreen3_Injecao() {
     u8g2.setCursor(0, 28);
     u8g2.print("Pnt:"); u8g2.print(carData.advance, 1);
     
-    // Calcula Litros/Hora: (3 * RPM * Inj_ms * 994cc) / 60000 * 0.06 -> RPM * Inj_ms * 0.002982
-    float lph = carData.rpm * carData.injTimeA * 0.002982f;
-    
+    // Calcula Litros/Hora Instantâneo: RPM * Inj_ms * 0.002982
+    float inst_lph = carData.rpm * carData.injTimeA * 0.002982f;
+      
+    // Filtro passa-baixa (suavização) para não pular para 99 km/L a cada aliviada de pé
+    static float filtered_lph = 0.0f;
+    if (filtered_lph == 0.0f) filtered_lph = inst_lph;
+    filtered_lph = (filtered_lph * 0.8f) + (inst_lph * 0.2f);
+      
     u8g2.setCursor(64, 28);
     if (carData.speed >= 1.0f) {
         u8g2.print("kmL:");
-        if (lph > 0.5f) {
-            float kml = carData.speed / lph;
+        if (filtered_lph > 0.5f) {
+            float kml = carData.speed / filtered_lph;
             if (kml > 99.9f) kml = 99.9f;
             u8g2.print(kml, 1);
         } else {
-            u8g2.print("99.9"); // Cut-off
+            u8g2.print("99.9");
         }
     } else {
-        // Carro parado: Mostra L/h
         u8g2.print("L/h:");
-        if (carData.rpm > 0) {
-            u8g2.print(lph, 1);
-        } else {
-            u8g2.print("--");
-        }
+        u8g2.print(filtered_lph, 1);
     }
 }
 
 void drawScreen4_Pressoes() {
     u8g2.setFont(u8g2_font_6x10_tr);
-    
-    u8g2.setCursor(0, 12);
-    u8g2.print("OLE:"); u8g2.print(carData.oilPressure, 1);
-    
-    u8g2.setCursor(64, 12);
-    u8g2.print("CMB:"); u8g2.print(carData.fuelPressure, 1);
+    u8g2.drawStr(40, 10, "PRESSOES");
 
-    u8g2.setCursor(0, 28);
+    u8g2.setCursor(0, 24);
+    u8g2.print("OLE:"); u8g2.print(carData.oilPressure, 1); u8g2.print("bar");
+
+    u8g2.setCursor(64, 24);
+    u8g2.print("COMB:"); u8g2.print(carData.fuelPressure, 1);
+
+    u8g2.setCursor(0, 36);
     u8g2.print("H2O:"); u8g2.print(carData.waterPressure, 1);
 }
 
@@ -189,13 +190,13 @@ void drawScreen5_Status() {
     u8g2.setFont(u8g2_font_6x10_tr);
     
     u8g2.setCursor(0, 12);
-    u8g2.print("BT:"); u8g2.print(carData.bleConnected ? "ON" : "OFF");
+    u8g2.print("VEL:"); u8g2.print(carData.speed, 1);
     
     u8g2.setCursor(64, 12);
     u8g2.print("BAT:"); u8g2.print(carData.battery, 1); u8g2.print("V");
 
     u8g2.setCursor(0, 28);
-    u8g2.print("LOG:"); u8g2.print(carData.loggingActive ? "ON" : "OFF");
+    u8g2.print("BT:"); u8g2.print(carData.bleConnected ? "ON" : "OFF");
     
     u8g2.setCursor(64, 28);
     u8g2.print("CAN:"); u8g2.print(carData.canActive ? "OK" : "OFF");
