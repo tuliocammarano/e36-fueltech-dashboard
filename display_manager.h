@@ -152,7 +152,7 @@ void drawScreen3_Injecao() {
     float lph = carData.rpm * carData.injTimeA * 0.002982f;
     
     u8g2.setCursor(64, 28);
-    if (carData.speed > 3.0f) {
+    if (carData.speed >= 1.0f) {
         u8g2.print("kmL:");
         if (lph > 0.5f) {
             float kml = carData.speed / lph;

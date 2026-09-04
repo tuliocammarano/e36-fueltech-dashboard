@@ -56,13 +56,6 @@ void parseMeasures(const uint8_t* payload, uint16_t length) {
         else if (dataId == 0x0183) { // Wastegate Pressure Input (assumindo 0.001)
             carData.wgPressure = value * 0.001f;
         }
-        else if (dataId == 0x000F) { // Right rear wheel speed (0.1)
-            if (value != 0x7FFF && value > 0) {
-                carData.speed = value * 0.1f;
-            } else if (value == 0) {
-                carData.speed = 0.0f;
-            }
-        }
     }
 }
 
@@ -142,7 +135,20 @@ static void decodeFT600(uint32_t canId, const uint8_t* d) {
             break;
         }
 
-        // 0x14080603 — Removed (Wheel speeds are now parsed from Segmented Packets)
+        // 0x14080603 — Wheel Speeds (From FuelTech Table)
+        // O Fator de escala da FuelTech para velocidade mudou em firmwares recentes.
+        // Pelo relato de 0.6 km/L a 40km/h, a FT está mandando o valor direto em km/h (multiplicador 1)
+        // em vez de 0.1!
+        case FTCAN_ID_0x603: {
+            uint16_t b45_RR = decodeU16BE(d[4], d[5]); // Wheel Speed RR está nos Bytes 4-5
+            
+            if (b45_RR != 0xFFFF && b45_RR != 0x7FFF && b45_RR > 0) {
+                carData.speed = (float)b45_RR; // Multiplicador 1! (Se fosse 400 seria 40.0, mas o user viu 4 virar 0.4)
+            } else if (b45_RR == 0) {
+                carData.speed = 0.0f;
+            }
+            break;
+        }
 
         // 0x14080605 — Removed (Wheel speeds are now parsed from Segmented Packets)
 
@@ -226,6 +232,7 @@ void readCAN() {
             case FTCAN_ID_0x600:
             case FTCAN_ID_0x601:
             case FTCAN_ID_0x602:
+            case FTCAN_ID_0x603:
             case FTCAN_ID_0x607:
             case FTCAN_ID_0x608:
                 decodeFT600(id, d);
