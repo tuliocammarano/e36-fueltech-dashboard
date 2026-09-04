@@ -174,15 +174,14 @@ void drawScreen3_Injecao() {
 
 void drawScreen4_Pressoes() {
     u8g2.setFont(u8g2_font_6x10_tr);
-    u8g2.drawStr(40, 10, "PRESSOES");
 
-    u8g2.setCursor(0, 24);
+    u8g2.setCursor(0, 12);
     u8g2.print("OLE:"); u8g2.print(carData.oilPressure, 1); u8g2.print("bar");
 
-    u8g2.setCursor(64, 24);
+    u8g2.setCursor(64, 12);
     u8g2.print("COMB:"); u8g2.print(carData.fuelPressure, 1);
 
-    u8g2.setCursor(0, 36);
+    u8g2.setCursor(0, 28);
     u8g2.print("H2O:"); u8g2.print(carData.waterPressure, 1);
 }
 
