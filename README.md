@@ -1,124 +1,125 @@
 # E36 FuelTech Telemetry Dashboard & Gateway v2.0
 
-Painel de telemetria para BMW E36 com injeção FuelTech, redesenhado com arquitetura **Dual-Core FreeRTOS** para máxima confiabilidade no barramento CAN a 1 Mbps.
+Painel de telemetria para BMW E36 (ou outros veículos) com injeção FuelTech, desenhado para ler os dados da rede CAN a 1 Mbps e exibi-los em um display OLED, além de transmitir via Bluetooth para o aplicativo RealDash.
 
-## 🏗️ Arquitetura v2.0
+O sistema possui arquitetura avançada com **Dual-Core**, mas foi feito para ser muito **simples de montar e instalar**!
+
+---
+
+## 🔌 O que ligar aonde (Guia de Montagem)
+
+Para montar o projeto, você vai precisar de:
+- **1x ESP32** (Recomendado: WROOM DevKit V1 de 30 pinos)
+- **1x Módulo CAN MCP2515** (com transceiver TJA1050)
+- **1x Display OLED SSD1305** (128x32 SPI)
+- **2x Botões simples** (Push buttons)
+- **1x Módulo Regulador de Tensão Step-Down** (ex: LM2596 - converte 12V do carro para 5V)
+
+### 1. Alimentação (Energia)
+O painel foi programado para "dormir" (Deep Sleep) quando a FuelTech desliga e "acordar" sozinho quando a FuelTech liga. Por isso, ele deve ser ligado no 12V contínuo da bateria do carro.
+
+* **Carro (12V Direto Bateria)** ➔ Entrada `IN+` do Step-Down
+* **Carro (GND/Lataria)** ➔ Entrada `IN-` do Step-Down
+* **Saída 5V (`OUT+`) do Step-Down** ➔ Pino `VIN` (ou `5V`) do ESP32 **E** Pino `VCC` do MCP2515
+* **Saída GND (`OUT-`) do Step-Down** ➔ Pino `GND` do ESP32 **E** Pino `GND` do MCP2515
+
+### 2. Módulo CAN (MCP2515) ➔ ESP32
+Este módulo lê os dados que vêm da injeção FuelTech.
+
+| Pino MCP2515 | Pino ESP32 | Observação / Função |
+| :--- | :--- | :--- |
+| **VCC** | 5V | Alimentação (vem do Step-Down) |
+| **GND** | GND | Terra |
+| **CS** | **GPIO 5** | Seleção do chip |
+| **SO (MISO)** | **GPIO 19** | Dados |
+| **SI (MOSI)** | **GPIO 23** | Dados |
+| **SCK** | **GPIO 18** | Clock |
+| **INT** | **GPIO 4** | Importante para acordar o painel automaticamente |
+
+**Ligação na FuelTech:**
+* **CAN H** do MCP2515 ➔ Fio **CAN HI** da FuelTech
+* **CAN L** do MCP2515 ➔ Fio **CAN LO** da FuelTech
+
+### 3. Display OLED (SSD1305) ➔ ESP32
+A tela onde os dados e alertas serão exibidos.
+
+| Pino Display | Pino ESP32 |
+| :--- | :--- |
+| **VCC** | 3.3V (pino 3V3 do ESP32) |
+| **GND** | GND |
+| **CLK / D0** | **GPIO 14** |
+| **DATA / D1 / MOSI** | **GPIO 13** |
+| **CS** | **GPIO 15** |
+| **DC / A0** | **GPIO 27** |
+| **RESET / RST** | **GPIO 33** |
+
+### 4. Botões (Navegação de Telas)
+Os botões não precisam de resistores, basta ligar um lado no ESP32 e o outro lado no GND (Terra).
+
+| Botão | Pino ESP32 | Onde ligar a outra perna |
+| :--- | :--- | :--- |
+| **Próxima Tela (NEXT)** | **GPIO 26** | GND |
+| **Tela Anterior (PREV)**| **GPIO 25** | GND |
+
+---
+
+## 🚀 Como Instalar o Software (Passo a Passo)
+
+1. **Baixe e prepare o código**
+   * Faça o download ou clone este repositório no seu computador.
+   * Na pasta do projeto, encontre o arquivo `config.example.h`, faça uma cópia dele e renomeie a cópia para `config.h`.
+   * Abra esse `config.h` e coloque o nome e senha do seu WiFi (isso serve apenas para fazer atualizações sem fio no futuro).
+
+2. **Prepare a Arduino IDE**
+   * Abra a Arduino IDE e certifique-se de que a placa ESP32 está instalada (em Boards Manager).
+   * Vá em *Sketch -> Include Library -> Manage Libraries* e instale:
+     * `U8g2` (por olikraus)
+     * `mcp2515` (por autowp)
+
+3. **Configuração da Placa**
+   * Em *Tools -> Board*, selecione **ESP32 Dev Module**.
+   * Em *Tools -> Partition Scheme*, escolha **Default 4MB with spiffs** ou **Min SPIFFS (1.9MB APP with OTA)**.
+
+4. **Gravação**
+   * Conecte o ESP32 via cabo USB, selecione a porta (Port) correta.
+   * Clique no botão **Upload** e aguarde finalizar. Pronto!
+
+---
+
+## 📱 Usando com o RealDash no Celular/Tablet
+
+Este projeto também envia os dados da FuelTech para o aplicativo RealDash via Bluetooth!
+
+1. Copie o arquivo `realdash_e36.xml` que está nesta pasta para o seu celular/tablet.
+2. Abra o RealDash, vá em **Connections** -> **Add** -> **RealDash CAN** -> **Bluetooth**.
+3. Selecione o dispositivo Bluetooth chamado `E36_Dash_BT`.
+4. Quando pedir o arquivo de definição (channel definition), escolha o arquivo XML que você copiou no Passo 1.
+
+---
+
+## 🤓 Detalhes Técnicos e Arquitetura v2.0
+*(Seção para desenvolvedores e curiosos)*
 
 ### Dual-Core FreeRTOS
 
 | Core | Task | Prioridade | Stack | Responsabilidades |
 |------|------|-----------|-------|-------------------|
-| **Core 1** | CAN_Task | 2 (alta) | 8 KB | Polling MCP2515, FTCAN 2.0 decoder, cálculo de consumo, SwitchPanel |
-| **Core 0** | HMI_Task | 1 (menor) | 8 KB | Display OLED 20 FPS, Bluetooth SPP (RealDash), botões físicos |
+| **Core 1** | CAN_Task | 2 (alta) | 3 KB | Polling MCP2515, FTCAN 2.0 decoder, cálculo de consumo, SwitchPanel |
+| **Core 0** | HMI_Task | 1 (menor) | 4 KB | Display OLED 20 FPS, Bluetooth SPP (RealDash), botões físicos |
 | **Core 0** | loop() | 1 | default | ArduinoOTA, WiFi Track/Pit Mode |
 
-### Sincronização
-- **CarData** (Single Source of Truth) protegida por **FreeRTOS Mutex**
-- CAN Task **escreve** → HMI Task **lê snapshots** thread-safe
-- Timeout do mutex: 5-10ms (não-blocante, previne deadlocks)
+* **Sincronização**: Uso de Mutex (FreeRTOS) para garantir leitura/escrita segura dos dados entre os núcleos.
+* **Track Mode / Pit Mode**: O ESP32 alterna automaticamente entre Bluetooth (para pista) e WiFi (quando o motor para, para receber atualizações OTA), compartilhando a mesma antena.
+* **Deep Sleep**: Após 30 segundos sem atividade na CAN, desliga o display e dorme, consumindo pouquíssima bateria. O MCP2515 acorda o ESP32 via pino de interrupção (INT) quando o carro liga.
 
-### Track Mode / Pit Mode (Coexistência WiFi + BT)
-O ESP32 compartilha **um único rádio** entre WiFi e Bluetooth via TDM.
-
-- **Track Mode** (default): WiFi **OFF** → Bluetooth com bandwidth total
-- **Pit Mode** (auto): WiFi **ON** quando RPM = 0 por >5 segundos → OTA disponível
-- Transição automática com **histerese** para evitar cycling durante cranking
-
-## 📊 Dados Monitorados
-
-| Canal | Fonte | Atualização |
-|-------|-------|-------------|
-| RPM, MAP, TPS, Gear | Simplified 0x600-0x603 | ~100 Hz |
-| Temperaturas (Motor, Óleo, Ar, Câmbio) | Simplified 0x600, 0x602, 0x608 | ~100 Hz |
-| EGT 1-8 (com alerta circuito aberto 0x20D0) | EGT-4 Protocol | ~10 Hz |
-| Pressões (Óleo, Combustível, Água, Freio) | Simplified 0x601, 0x608 | ~100 Hz |
-| Lambda, Inj Time, Lambda Correction | Simplified 0x602, 0x607 | ~100 Hz |
-| Duty Cycle, Advance, Battery, 2-Step | Segmented FTCAN 2.0 | ~50 Hz |
-| Consumo (L/h e km/L com EMA 80/20) | **Calculado** (994 cc/min × 6 cil) | ~100 Hz |
-| Velocidade (Roda RR) | Simplified 0x603 | ~100 Hz |
-
-## ⛽ Cálculo de Consumo
-
-- **Motor**: BMW M50 — 6 cilindros
-- **Bicos**: 994 cc/min
-- **Fórmula**: `Duty = PW_ms × RPM / 120000` → `L/h = 6 × Duty × 994 × 0.06`
-- **Filtro**: EMA (Exponential Moving Average) α=0.2 → suaviza transições Decel/DFCO
-- **Display dinâmico**: L/h (velocidade < 1 km/h) → km/L (velocidade ≥ 1 km/h)
-
-## 🔌 Hardware
-
-- **MCU**: ESP32 DevKit V1 (WROOM, 4MB Flash)
-- **CAN**: MCP2515 + TJA1050 (Hardware SPI: VSPI)
-- **Display**: OLED SSD1305 128x32 (Software SPI — **sem conflito** com CAN)
-- **Alimentação**: Step-down 12V → 5V
-
-### Pinagem
-
-**MCP2515 (Hardware SPI — VSPI):**
-| Sinal | GPIO |
-|-------|------|
-| SCK | 18 |
-| MISO | 19 |
-| MOSI | 23 |
-| CS | 5 |
-
-**OLED SSD1305 (Software SPI):**
-| Sinal | GPIO |
-|-------|------|
-| CLK | 14 |
-| DATA/MOSI | 13 |
-| CS | 15 |
-| DC | 27 |
-| RESET | 33 |
-
-**Botões:**
-| Sinal | GPIO |
-|-------|------|
-| NEXT | 26 |
-| PREV | 25 |
-
-## 🚀 Como Instalar
-
-1. Clone o repositório
-2. Copie `config.example.h` → `config.h`
-3. Edite `config.h` com suas credenciais WiFi
-4. Na Arduino IDE, instale as bibliotecas:
-   - `U8g2` (por olikraus)
-   - `mcp2515` (por autowp)
-5. **Board**: ESP32 Dev Module
-6. **Partition Scheme**: `Default 4MB with spiffs` ou `Min SPIFFS (1.9MB APP with OTA)`
-7. Compile e faça upload!
-
-## 📱 RealDash
-
-1. Copie `realdash_e36.xml` para o celular
-2. No RealDash: Connections → Add → RealDash CAN → Bluetooth → `E36_Dash_BT`
-3. Selecione o arquivo XML como channel definition
-
-## 📦 Dependências
-
-| Biblioteca | Autor | Uso |
-|-----------|-------|-----|
-| U8g2 | olikraus | Display SSD1305 128x32 |
-| mcp2515 | autowp | Controlador CAN MCP2515 |
-| BluetoothSerial | Espressif (built-in) | BT Classic SPP |
-| WiFi | Espressif (built-in) | OTA |
-| ArduinoOTA | Arduino (built-in) | Updates |
-| SPI | Arduino (built-in) | Hardware SPI |
-
-## 🔄 Diferenças da v1.0
-
-| Aspecto | v1.0 | v2.0 |
-|---------|------|------|
-| Arquitetura | Single-core cooperativo | **Dual-core FreeRTOS** |
-| Thread safety | Nenhum | **Mutex-protected CarData** |
-| Código | Tudo em `.h` (ODR violation) | **`.h` + `.cpp` separados** |
-| WiFi em pista | Sempre ativo | **Track Mode (OFF)** |
-| Consumo | Magic number no display | **Fórmula explícita + EMA central** |
-| Segmented timeout | Nenhum | **100ms timeout** |
-| Stack size | N/A (single-core) | **8 KB por task** |
-| Boot | Blocking WiFi (até 10s) | **CAN inicia antes do display** |
+### 📊 Dados Monitorados
+* RPM, MAP, TPS, Marcha (Gear)
+* Temperaturas (Motor, Óleo, Ar, Câmbio)
+* EGT 1-8 (com alerta de circuito aberto)
+* Pressões (Óleo, Combustível, Água, Freio)
+* Lambda, Tempo de Injeção
+* Velocidades
+* **Consumo Calculado:** O código processa o Duty Cycle dos bicos (ex: 994cc/min) com filtro EMA para gerar leitura estável de L/h ou km/L no painel.
 
 ## 📄 Licença
-
 Projeto pessoal — uso livre para fins educacionais.
