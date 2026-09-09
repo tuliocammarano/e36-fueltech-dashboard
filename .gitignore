@@ -1,0 +1,10 @@
+# Credenciais
+config.h
+
+# Arduino IDE build
+build/
+*.bin
+
+# IDE
+.vscode/
+.pio/
